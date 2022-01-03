@@ -1,6 +1,6 @@
+import { assert } from './loader/sql';
 import { TSQueryAST } from './loader/typescript';
 import { Param, ParamKey, ParamType } from './loader/typescript/query';
-import { assert } from './loader/sql';
 import {
   IDictArrayParam,
   IDictParam,
@@ -264,5 +264,6 @@ export const processTSQueryAST = (
     mapping: parameters ? [] : Object.values(baseMap),
     query: flatStr,
     bindings,
+    columnsToTransform: [],
   };
 };

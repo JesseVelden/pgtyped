@@ -263,9 +263,9 @@ export const messages = {
     /** Password string either plain text or MD5 encrypted */
     password: string;
   }>,
-  /** Query message initiates a simple query cycle. */
+  /** SQLQuery message initiates a simple query cycle. */
   query: {
-    name: 'Query',
+    name: 'SQLQuery',
     type: 'CLIENT',
     indicator: 'Q',
     pattern: (data) => [cString(data.query)],

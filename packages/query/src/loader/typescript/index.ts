@@ -1,10 +1,10 @@
 import * as ts from 'typescript';
-import parseQuery, { Query } from './query';
+import parseQuery, { TSQuery } from './query';
 import { ParseEvent } from '../sql/logger';
 
 export const parseTSQuery = parseQuery;
 
-export type TSQueryAST = Query;
+export type TSQueryAST = TSQuery;
 
 interface INode {
   queryName: string;

@@ -1,10 +1,10 @@
 import * as queryModule from '@pgtyped/query';
 import { parseSQLFile, parseTypeScriptFile } from '@pgtyped/query';
 import { IQueryTypes } from '@pgtyped/query/lib/actions';
+import { ParsedConfig } from './config';
 import { generateInterface, queryToTypeDeclarations } from './generator';
 import { ProcessingMode } from './index';
 import { DefaultTypeMapping, TypeAllocator } from './types';
-import { ParsedConfig } from './config';
 
 const getTypesMocked = jest.spyOn(queryModule, 'getTypes').mockName('getTypes');
 
@@ -45,7 +45,7 @@ describe('query-to-interface translation', () => {
           },
         ],
         paramMetadata: {
-          params: ['uuid'],
+          params: [{ oid: 1, typeName: 'uuid' }],
           mapping: [
             {
               name: 'userId',
@@ -106,7 +106,11 @@ export interface IGetNotificationsQuery {
       const mockTypes: IQueryTypes = {
         returnTypes: [],
         paramMetadata: {
-          params: ['json', 'uuid', 'text'],
+          params: [
+            { oid: 1, typeName: 'json' },
+            { oid: 2, typeName: 'uuid' },
+            { oid: 1, typeName: 'text' },
+          ],
           mapping: [
             {
               name: 'notification',
@@ -195,7 +199,11 @@ export interface IInsertNotificationsQuery {
           },
         ],
         paramMetadata: {
-          params: ['text', 'uuid', 'text'],
+          params: [
+            { oid: 1, typeName: 'json' },
+            { oid: 2, typeName: 'uuid' },
+            { oid: 1, typeName: 'text' },
+          ],
           mapping: [
             {
               name: 'userName',
@@ -276,7 +284,7 @@ export interface IDeleteUsersQuery {
           },
         ],
         paramMetadata: {
-          params: ['uuid'],
+          params: [{ oid: 2, typeName: 'uuid' }],
           mapping: [
             {
               name: 'userId',
@@ -352,7 +360,7 @@ export interface IGetNotificationsQuery {
           },
         ],
         paramMetadata: {
-          params: ['uuid'],
+          params: [{ oid: 2, typeName: 'uuid' }],
           mapping: [
             {
               name: 'userIds',
@@ -424,7 +432,7 @@ export interface IGetNotificationsQuery {
           },
         ],
         paramMetadata: {
-          params: ['uuid'],
+          params: [{ oid: 1, typeName: 'uuid' }],
           mapping: [
             {
               name: 'userId',

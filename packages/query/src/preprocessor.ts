@@ -1,4 +1,9 @@
-export type Scalar = string | number | null;
+interface RangeType {
+  start: any;
+  end: any;
+  bounds: string;
+}
+export type Scalar = string | number | RangeType | null;
 
 export enum ParamTransform {
   Scalar,
@@ -42,10 +47,13 @@ export type QueryParam =
   | IDictParam
   | IDictArrayParam;
 
+export type ColumnsToTransform = { [colIndex: number]: string } | undefined;
+
 export interface IInterpolatedQuery {
   query: string;
   mapping: QueryParam[];
-  bindings: Scalar[];
+  bindings: (Scalar | Buffer)[];
+  columnsToTransform: ColumnsToTransform;
 }
 
 export interface INestedParameters {

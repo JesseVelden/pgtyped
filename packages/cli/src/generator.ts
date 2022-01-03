@@ -4,17 +4,20 @@ import {
   parseSQLFile,
   parseTypeScriptFile,
   prettyPrintEvents,
-  processTSQueryAST,
   processSQLQueryAST,
+  processTSQueryAST,
+  Query,
+  QueryParam,
   SQLQueryAST,
   TSQueryAST,
 } from '@pgtyped/query';
+import { OIDs } from '@pgtyped/types';
 import { camelCase } from 'camel-case';
 import { pascalCase } from 'pascal-case';
+import path from 'path';
+import { ParsedConfig } from './config';
 import { ProcessingMode } from './index';
 import { DefaultTypeMapping, TypeAllocator } from './types';
-import { ParsedConfig } from './config';
-import path from 'path';
 
 export interface IField {
   fieldName: string;
@@ -54,7 +57,7 @@ export async function queryToTypeDeclarations(
   connection: any,
   types: TypeAllocator,
   config: ParsedConfig,
-): Promise<string> {
+): Promise<{ typeDeclaration: string; typedAST: Query }> {
   let queryData;
   let queryName;
   if (parsedQuery.mode === ProcessingMode.TS) {
@@ -81,7 +84,10 @@ export async function queryToTypeDeclarations(
     );
     const resultErrorComment = `/** Query '${queryName}' is invalid, so its result is assigned type 'never' */\n`;
     const paramErrorComment = `/** Query '${queryName}' is invalid, so its parameters are assigned type 'never' */\n`;
-    return `${resultErrorComment}${returnInterface}${paramErrorComment}${paramInterface}`;
+    return {
+      typeDeclaration: `${resultErrorComment}${returnInterface}${paramErrorComment}${paramInterface}`,
+      typedAST: parsedQuery.ast,
+    };
   }
 
   const { returnTypes, paramMetadata } = typeData;
@@ -114,8 +120,18 @@ export async function queryToTypeDeclarations(
         param.assignedIndex instanceof Array
           ? param.assignedIndex[0]
           : param.assignedIndex;
-      const pgTypeName = params[assignedIndex - 1];
-      let tsTypeName = types.use(pgTypeName);
+      const { oid, typeName: pgTypeName } = params[assignedIndex - 1];
+      const knownOID = oid in OIDs;
+
+      let tsTypeName = types.use(
+        pgTypeName,
+        types.isMappedType(oid) ? pgTypeName : undefined,
+      );
+
+      (parsedQuery.ast.params[assignedIndex - 1] as QueryParam).type = {
+        oid,
+        ...(!knownOID && { customType: pgTypeName as string }),
+      };
 
       if (!param.required) {
         tsTypeName += ' | null | void';
@@ -129,7 +145,19 @@ export async function queryToTypeDeclarations(
       const isArray = param.type === ParamTransform.PickSpread;
       let fieldType = Object.values(param.dict)
         .map((p) => {
-          const paramType = types.use(params[p.assignedIndex - 1]);
+          const { oid, typeName: postgresType } = params[p.assignedIndex - 1];
+          const knownOID = oid in OIDs;
+          const paramType = types.use(
+            postgresType,
+            types.isMappedType(oid) ? pgTypeName : undefined,
+          );
+          // TODO check met meerder dingen in de pick, en de array pick.Bv. id erbij en omwisselen van plek.
+          // dus er voor zorgen dat de [p.assignedIndex-1] van de parsedQuery.ast.params ook op dezelfde plek staat als
+          // params[p.assignedIndex-1]
+          parsedQuery.ast.params[p.assignedIndex - 1].type = {
+            oid,
+            ...(!knownOID && { customType: postgresType as string }),
+          };
           return p.required
             ? `    ${p.name}: ${paramType}`
             : `    ${p.name}: ${paramType} | null | void`;
@@ -173,9 +201,14 @@ export async function queryToTypeDeclarations(
       { fieldName: 'result', fieldType: resultInterfaceName },
     ]);
 
-  return [paramTypesInterface, returnTypesInterface, typePairInterface].join(
-    '',
-  );
+  return {
+    typeDeclaration: [
+      paramTypesInterface,
+      returnTypesInterface,
+      typePairInterface,
+    ].join(''),
+    typedAST: parsedQuery.ast,
+  };
 }
 
 type ITypedQuery =
@@ -224,7 +257,7 @@ async function generateTypedecsFromFile(
     let typedQuery: ITypedQuery;
     if (mode === 'sql') {
       const sqlQueryAST = queryAST as SQLQueryAST;
-      const result = await queryToTypeDeclarations(
+      const { typeDeclaration, typedAST } = await queryToTypeDeclarations(
         { ast: sqlQueryAST, mode: ProcessingMode.SQL },
         connection,
         types,
@@ -233,17 +266,17 @@ async function generateTypedecsFromFile(
       typedQuery = {
         mode: 'sql' as const,
         query: {
-          name: camelCase(sqlQueryAST.name),
-          ast: sqlQueryAST,
-          paramTypeAlias: `I${pascalCase(sqlQueryAST.name)}Params`,
-          returnTypeAlias: `I${pascalCase(sqlQueryAST.name)}Result`,
+          name: camelCase(typedAST.name),
+          ast: typedAST as SQLQueryAST,
+          paramTypeAlias: `I${pascalCase(typedAST.name)}Params`,
+          returnTypeAlias: `I${pascalCase(typedAST.name)}Result`,
         },
         fileName,
-        typeDeclaration: result,
+        typeDeclaration,
       };
     } else {
       const tsQueryAST = queryAST as TSQueryAST;
-      const result = await queryToTypeDeclarations(
+      const { typeDeclaration, typedAST } = await queryToTypeDeclarations(
         {
           ast: tsQueryAST,
           mode: ProcessingMode.TS,
@@ -256,10 +289,10 @@ async function generateTypedecsFromFile(
         mode: 'ts' as const,
         fileName,
         query: {
-          name: tsQueryAST.name,
-          ast: tsQueryAST,
+          name: typedAST.name,
+          ast: typedAST as TSQueryAST,
         },
-        typeDeclaration: result,
+        typeDeclaration,
       };
     }
     results.push(typedQuery);

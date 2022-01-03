@@ -72,7 +72,7 @@ The array spread expansion allows to pass an array of scalars as parameter.
 
 #### Example:
 
-```sql title="Query definition:"
+```sql title="SQLQuery definition:"
 /*
   @name selectSomeUsers
   @param ages -> (...)
@@ -102,7 +102,7 @@ The object pick expansion allows to pass an object as a parameter.
 
 #### Example:
 
-```sql title="Query definition:"
+```sql title="SQLQuery definition:"
 /*
   @name insertUsers
   @param user -> (name, age)
@@ -132,7 +132,7 @@ The array spread-and-pick expansion allows to pass an array of objects as a para
 
 #### Example:
 
-```sql title="Query definition:"
+```sql title="SQLQuery definition:"
 /*
   @name insertUsers
   @param users -> ((name, age)...)
@@ -162,7 +162,7 @@ This can be done using the exclamation mark modifier `:paramName!`.
 
 #### Example:
 
-```sql title="Query definition:"
+```sql title="SQLQuery definition:"
 /* @name GetAllComments */
 SELECT * FROM book_comments WHERE id = :id OR user_id = :id;
 

@@ -1,3 +1,7 @@
+import {
+  Query,
+  QueryParam
+} from "../../index";
 import { SQLParserListener } from './parser/SQLParserListener';
 import { CharStreams, CommonTokenStream } from 'antlr4ts';
 import { ParseTreeWalker } from 'antlr4ts/tree/ParseTreeWalker';
@@ -39,7 +43,7 @@ export type ParamTransform =
       keys: ParamKey[];
     };
 
-export interface Param {
+export interface Param extends QueryParam{
   name: string;
   transform: ParamTransform;
   required: boolean;
@@ -61,7 +65,7 @@ interface Statement {
   body: string;
 }
 
-export interface Query {
+export interface SQLQuery extends Query {
   name: string;
   params: Param[];
   statement: Statement;
@@ -69,7 +73,7 @@ export interface Query {
 }
 
 interface ParseTree {
-  queries: Query[];
+  queries: SQLQuery[];
 }
 
 export function assert(condition: any): asserts condition {
@@ -81,7 +85,7 @@ export function assert(condition: any): asserts condition {
 class ParseListener implements SQLParserListener {
   logger: Logger;
   public parseTree: ParseTree = { queries: [] };
-  private currentQuery: Partial<Query> = {};
+  private currentQuery: Partial<SQLQuery> = {};
   private currentParam: Partial<Param> = {};
   private currentTransform: Partial<ParamTransform> = {};
 
@@ -90,7 +94,7 @@ class ParseListener implements SQLParserListener {
   }
 
   exitQuery() {
-    const currentQuery = this.currentQuery as Query;
+    const currentQuery = this.currentQuery as SQLQuery;
     currentQuery.params.forEach((p) => {
       const paramUsed = p.name in currentQuery.usedParamSet;
       if (!paramUsed) {
@@ -250,7 +254,7 @@ class ParseListener implements SQLParserListener {
   }
 }
 
-export type SQLParseResult = { queries: Query[]; events: ParseEvent[] };
+export type SQLParseResult = { queries: SQLQuery[]; events: ParseEvent[] };
 
 function parseText(text: string): SQLParseResult {
   const logger = new Logger();
@@ -274,5 +278,5 @@ function parseText(text: string): SQLParseResult {
 }
 
 export { prettyPrintEvents } from './logger';
-export type SQLQueryAST = Query;
+export type SQLQueryAST = SQLQuery;
 export default parseText;

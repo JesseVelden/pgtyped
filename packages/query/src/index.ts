@@ -23,3 +23,19 @@ export {
 } from './loader/sql';
 
 export { default as sql, TaggedQuery, PreparedQuery } from './tag';
+
+export interface TypeInfo {
+  oid: number;
+  customType?: string;
+}
+
+export interface QueryParam {
+  name: string;
+  required: boolean;
+  type?: TypeInfo;
+}
+
+export interface Query {
+  name: string;
+  params: QueryParam[];
+}

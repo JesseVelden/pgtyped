@@ -4,7 +4,9 @@ import {
   isEnum,
   isEnumArray,
   isImport,
+  isRange,
   MappableType,
+  RangeType,
   Type,
 } from '@pgtyped/query/lib/type';
 
@@ -24,7 +26,31 @@ const getArray = (baseType: Type): Type => ({
   definition: `(${baseType.definition ?? baseType.name})[]`,
 });
 
+// const getRangeValue = (baseType: Type): Type => ({
+//   name: `${baseType.name}RangeBound`,
+//   definition: `{ value: ${baseType.name}; inclusive: boolean }`,
+// });
+
+const StringRange: RangeType = {
+  name: 'StringRange',
+  definition: `{ start: RangeBound<string>; end: RangeBound<string> }`,
+  isRange: true,
+};
+
+const NumberRange: RangeType = {
+  name: 'NumberRange',
+  definition: `{ start: RangeBound<number>; end: RangeBound<number> }`,
+  isRange: true,
+};
+
+// const getRange = (rangeType: NamedType): RangeType => ({
+//     name: `${rangeType.name}Range`,
+//     definition: `{ start: ${rangeType.name}; end: ${rangeType.name}; bounds: RangeBounds }`,
+//     isRange: true,
+// });
+
 export const DefaultTypeMapping = Object.freeze({
+  // TODO Convert to OIDs
   // Integer types
   int2: Number,
   int4: Number,
@@ -87,6 +113,17 @@ export const DefaultTypeMapping = Object.freeze({
 
   // Postgis types
   point: getArray(Number),
+
+  // Range types
+  int4range: NumberRange,
+  int8range: StringRange,
+  numrange: StringRange,
+
+  // For a date we're also using strings as time/date bounds in ranges are formatted according to Postgres’ current
+  //   DateStyle setting and not as ISO 8601 which is the case with normal date types.
+  tsrange: StringRange,
+  tstzrange: StringRange,
+  dateRange: StringRange,
 });
 
 export type BuiltinTypes = keyof typeof DefaultTypeMapping;
@@ -106,7 +143,13 @@ function declareAlias(name: string, definition: string): string {
 }
 
 function declareStringUnion(name: string, values: string[]) {
-  return declareAlias(name, values.sort().map((v) => `'${v}'`).join(' | '));
+  return declareAlias(
+    name,
+    values
+      .sort()
+      .map((v) => `'${v}'`)
+      .join(' | '),
+  );
 }
 
 /** Wraps a TypeMapping to track which types have been used, to accumulate errors,
@@ -123,7 +166,7 @@ export class TypeAllocator {
     private allowUnmappedTypes?: boolean,
   ) {}
 
-  isMappedType(name: string): name is keyof TypeMapping {
+  isMappedType(name: string | number): name is keyof TypeMapping {
     return name in this.mapping;
   }
 
@@ -165,6 +208,19 @@ export class TypeAllocator {
       } else {
         typ = typeNameOrType;
       }
+    }
+
+    let isRangeType = false;
+    if (isRange(typ)) {
+      this.imports['@pgtyped/types'] = (
+        this.imports['@pgtyped/types'] ?? new Set()
+      ).add('RangeBound');
+      isRangeType = true;
+      // this.use(getRangeValue(typ.rangeType));
+      // typ = {
+      //   ...typ,
+      //   definition: `{ start: ${typ.rangeType.name}; end: ${typ.rangeType.name}; bounds: RangeBounds }`,
+      // };
     }
 
     // Track type on first occurrence

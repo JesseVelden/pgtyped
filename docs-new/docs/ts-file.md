@@ -58,7 +58,7 @@ $$paramName;
 
 #### Example:
 
-```ts title="Query code:"
+```ts title="SQLQuery code:"
 const query = sql<IQueryType>`SELECT FROM users where age in $$ages`;
 
 const parameters = { ages: [25, 30, 35] };
@@ -83,7 +83,7 @@ $user(name, age)
 
 #### Example:
 
-```ts title="Query code:"
+```ts title="SQLQuery code:"
 const query = sql<
   IQueryType
 >`INSERT INTO users (name, age) VALUES $user(name, age) RETURNING id`;
@@ -139,7 +139,7 @@ INSERT INTO users (name, age) VALUES ($1, $2), ($3, $4) RETURNING id;
 
 ## Substitution reference
 
-| Expansion             | Query in TS                  | Query with substituted parameter  |
+| Expansion             | SQLQuery in TS                  | SQLQuery with substituted parameter  |
 |-----------------------|------------------------------|-----------------------------------|
 | Simple parameter      | `$parameter`                 | `$1`                              |
 | Object pick           | `$object(prop1, prop2)`      | `($1, $2)`                        |

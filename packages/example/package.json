@@ -21,8 +21,9 @@
     "check": "tsc --noEmit"
   },
   "dependencies": {
-    "@pgtyped/cli": "^0.13.0",
-    "@pgtyped/query": "^0.13.0",
+    "@pgtyped/cli": "file:../cli",
+    "@pgtyped/query": "file:../query",
+    "@pgtyped/types": "file:../types",
     "@types/pg": "8.6.3",
     "expect": "27.4.2",
     "pg": "8.7.1",

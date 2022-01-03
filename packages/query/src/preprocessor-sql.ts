@@ -1,5 +1,8 @@
+import serializers, { prepareValue } from '@pgtyped/types/lib/serializers';
+import { TypeInfo } from './index';
 import { assert, SQLQueryAST, TransformType } from './loader/sql';
 import {
+  ColumnsToTransform,
   IInterpolatedQuery,
   INestedParameters,
   IQueryParameters,
@@ -11,17 +14,26 @@ import {
   Scalar,
 } from './preprocessor';
 
+function serializeParameter(param: any, typeInfo: TypeInfo | undefined) {
+  const serializer = typeInfo?.oid && serializers[typeInfo.oid];
+  return (
+    (serializer as (param: any) => string | undefined)?.(param) ??
+    prepareValue(param)
+  );
+}
+
 /* Processes query AST formed by new parser from pure SQL files */
-export const processSQLQueryAST = (
+export function processSQLQueryAST(
   query: SQLQueryAST,
   passedParams?: IQueryParameters,
-): IInterpolatedQuery => {
-  const bindings: Scalar[] = [];
+): IInterpolatedQuery {
+  const bindings: (Scalar | Buffer)[] = [];
   const paramMapping: QueryParam[] = [];
   const usedParams = query.params.filter((p) => p.name in query.usedParamSet);
   const { a: statementStart } = query.statement.loc;
   let i = 1;
   const intervals: { a: number; b: number; sub: string }[] = [];
+  const columnsToTransform: ColumnsToTransform = {};
   for (const usedParam of usedParams) {
     const paramLocs = usedParam.codeRefs.used.map(({ a, b }) => ({
       a: a - statementStart - 1,
@@ -34,8 +46,8 @@ export const processSQLQueryAST = (
       if (passedParams) {
         const paramValue = passedParams[usedParam.name];
         sub = (paramValue as Scalar[])
-          .map((val) => {
-            bindings.push(val);
+          .map(async (val) => {
+            bindings.push(await serializeParameter(val, usedParam.type));
             return `$${i++}`;
           })
           .join(',');
@@ -76,8 +88,7 @@ export const processSQLQueryAST = (
             const paramValue = passedParams[
               usedParam.name
             ] as INestedParameters;
-            const val = paramValue[name];
-            bindings.push(val);
+            bindings.push(serializeParameter(paramValue[name], usedParam.type));
           }
           return `$${idx}`;
         })
@@ -105,12 +116,12 @@ export const processSQLQueryAST = (
       if (passedParams) {
         const passedParam = passedParams[usedParam.name] as INestedParameters[];
         sub = passedParam
-          .map((entity) => {
+          .map(async (entity) => {
             assert(usedParam.transform.type === TransformType.PickArraySpread);
             const ssub = usedParam.transform.keys
               .map(({ name }) => {
                 const val = entity[name];
-                bindings.push(val);
+                bindings.push(serializeParameter(val, usedParam.type));
                 return `$${i++}`;
               })
               .join(',');
@@ -153,7 +164,7 @@ export const processSQLQueryAST = (
     const assignedIndex = i++;
     if (passedParams) {
       const paramValue = passedParams[usedParam.name] as Scalar;
-      bindings.push(paramValue);
+      bindings.push(serializeParameter(paramValue, usedParam.type));
     } else {
       paramMapping.push({
         name: usedParam.name,
@@ -175,5 +186,6 @@ export const processSQLQueryAST = (
     mapping: paramMapping,
     query: flatStr,
     bindings,
+    columnsToTransform,
   };
-};
+}

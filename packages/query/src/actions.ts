@@ -147,7 +147,7 @@ export async function runQuery(query: string, queue: AsyncQueue) {
 export interface IQueryTypes {
   paramMetadata: {
     mapping: QueryParam[];
-    params: MappableType[];
+    params: { oid: number; typeName: MappableType }[];
   };
   returnTypes: Array<{
     returnName: string;
@@ -248,6 +248,7 @@ enum TypeCategory {
   NETWORK_ADDRESS = 'I',
   NUMERIC = 'N',
   PSEUDO = 'P',
+  RANGE = 'R',
   STRING = 'S',
   TIMESPAN = 'T',
   USERDEFINED = 'U',
@@ -402,7 +403,7 @@ export async function getTypes(
   }));
 
   const paramMetadata = {
-    params: params.map(({ oid }) => typeMap[oid]),
+    params: params.map(({ oid }) => ({ oid, typeName: typeMap[oid] })),
     mapping: queryData.mapping,
   };
 

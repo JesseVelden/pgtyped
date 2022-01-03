@@ -2,13 +2,8 @@
   "transforms": [
     {
       "mode": "sql",
-      "include": "**/*.sql",
+      "include": "jestest/test.sql",
       "emitTemplate": "{{dir}}/{{name}}.queries.ts"
-    },
-    {
-      "mode": "ts",
-      "include": "**/*.ts",
-      "emitTemplate": "{{dir}}/{{name}}.types.ts"
     }
   ],
   "srcDir": "./src/",

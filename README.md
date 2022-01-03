@@ -61,7 +61,7 @@ export interface IFindBookByIdResult {
 }
 
 /**
- * Query generated from SQL:
+ * SQLQuery generated from SQL:
  * SELECT * FROM books WHERE id = :bookId
  */
 export const findBookById = new PreparedQuery<
@@ -70,7 +70,7 @@ export const findBookById = new PreparedQuery<
 >(...);
 ```
 
-Query `findBookById` is now statically typed, with types inferred from the PostgreSQL schema.  
+SQLQuery `findBookById` is now statically typed, with types inferred from the PostgreSQL schema.  
 This generated query can be imported and executed as follows:
 
 ```ts

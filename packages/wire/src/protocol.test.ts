@@ -216,7 +216,7 @@ test('parseMessage for NoData works', () => {
   expect(bufferOffset).toBe(buf.length);
 });
 
-test('parseMessage for Query works', () => {
+test('parseMessage for SQLQuery works', () => {
   // prettier-ignore
   const buf = Buffer.from([
     0x51, 0x00, 0x00, 0x00, 0x16, 0x73, 0x65, 0x6c, 0x65, 0x63, 0x74, 0x20,

@@ -1,3 +1,4 @@
+import { QueryParam } from "../../index";
 import { QueryParserListener } from './parser/QueryParserListener';
 import { CharStreams, CommonTokenStream } from 'antlr4ts';
 import { ParseTreeWalker } from 'antlr4ts/tree/ParseTreeWalker';
@@ -38,7 +39,7 @@ export type ParamSelection =
       keys: ParamKey[];
     };
 
-export interface Param {
+export interface Param extends QueryParam {
   name: string;
   selection: ParamSelection;
   required: boolean;
@@ -52,7 +53,7 @@ interface CodeInterval {
   col: number;
 }
 
-export interface Query {
+export interface TSQuery {
   name: string;
   params: Param[];
   text: string;
@@ -66,7 +67,7 @@ export function assert(condition: any): asserts condition {
 
 class ParseListener implements QueryParserListener {
   logger: Logger;
-  query: Partial<Query> = {};
+  query: Partial<TSQuery> = {};
   private currentParam: Partial<Param> = {};
   private currentSelection: Partial<ParamSelection> = {};
 
@@ -158,7 +159,7 @@ class ParseListener implements QueryParserListener {
 function parseText(
   text: string,
   queryName: string = 'query',
-): { query: Query; events: ParseEvent[] } {
+): { query: TSQuery; events: ParseEvent[] } {
   const logger = new Logger();
   const inputStream = CharStreams.fromString(text);
   const lexer = new QueryLexer(inputStream);

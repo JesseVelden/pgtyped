@@ -3,7 +3,8 @@ export type Type =
   | ImportedType
   | AliasedType
   | EnumType
-  | EnumArrayType;
+  | EnumArrayType
+  | RangeType;
 // May be a database source type name (string) or a typescript destination type (Type)
 export type MappableType = string | Type;
 
@@ -30,6 +31,10 @@ export interface EnumArrayType extends NamedType {
   elementType: EnumType;
 }
 
+export interface RangeType extends NamedType {
+  isRange: true;
+}
+
 export function isImport(typ: Type): typ is ImportedType {
   return 'from' in typ;
 }
@@ -44,6 +49,10 @@ export function isEnum(typ: MappableType): typ is EnumType {
 
 export function isEnumArray(typ: MappableType): typ is EnumArrayType {
   return typeof typ !== 'string' && 'elementType' in typ;
+}
+
+export function isRange(typ: MappableType): typ is RangeType {
+  return typeof typ !== 'string' && 'isRange' in typ;
 }
 
 export const enum DatabaseTypeKind {
